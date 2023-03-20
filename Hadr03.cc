@@ -101,7 +101,7 @@ int main(int argc,char** argv) {
   G4String position = "/gun/position ";
   G4String usrCommand = "/control/execute tantalum.mac";
   UImanager->ApplyCommand(usrCommand);
-  //for (int i = 0; i < 10000; i++)
+  for (int i = 0; i < 20000; i++)
   {
       ParticleInfo::SetAll(40, G4ThreeVector(), G4ThreeVector(1, 0, 0));
       ParticleInfo::processed = false;
@@ -111,8 +111,8 @@ int main(int argc,char** argv) {
       UImanager->ApplyCommand(energy + ParticleInfo::GetEnergyStr());
       UImanager->ApplyCommand(momentum + ParticleInfo::GetMomentumStr());
       UImanager->ApplyCommand(position + ParticleInfo::GetPositionStr());
-      UImanager->ApplyCommand("/run/beamOn 100000");
-      /*if (ParticleInfo::processed)
+      UImanager->ApplyCommand("/run/beamOn 1");
+      if (ParticleInfo::processed)
       {
           ParticleInfo::isElectron = false;
           ParticleInfo::isGamma = true;
@@ -121,7 +121,7 @@ int main(int argc,char** argv) {
           UImanager->ApplyCommand(momentum + ParticleInfo::GetMomentumStr());
           UImanager->ApplyCommand(position + ParticleInfo::GetPositionStr());
           UImanager->ApplyCommand("/run/beamOn 1");
-      }*/
+      }
   }
   G4cout << "<----------------Neutrons--------------->\n\nNeutrons emitted: ";
   G4cout << ParticleInfo::neutronCount << std::endl;
