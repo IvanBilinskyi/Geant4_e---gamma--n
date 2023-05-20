@@ -325,6 +325,8 @@ void Run::EndOfRun(G4bool print)
     for (it = fProcCounter.begin(); it != fProcCounter.end(); it++) {
       G4String procName = it->first;
       G4VProcess* process = processTable->FindProcess(procName, fParticle);
+      if (process == nullptr)
+          continue;
       G4double xs1 =
       store->GetCrossSectionPerVolume(fParticle,fEkin,process,material);
       G4double massSigma = xs1/density;

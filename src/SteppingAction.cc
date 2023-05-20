@@ -85,6 +85,7 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
   //
   G4ParticleDefinition* particle = aStep->GetTrack()->GetDefinition();
   G4String partName = particle->GetParticleName();
+  G4String neutron = "neutron";
   G4String nuclearChannel = partName;
   G4HadronicProcess* hproc = dynamic_cast<G4HadronicProcess*>(process);
   const G4Isotope* target = NULL;
@@ -134,7 +135,8 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
     ih = 0; 
          if (particle == G4Gamma::Gamma())       ih = 2;
     else if (particle == G4Electron::Electron()) ih = 3;
-    else if (particle == G4Neutron::Neutron())   ih = 4;        
+    else if (particle == G4Neutron::Neutron())
+        ih = 4;
     else if (particle == G4Proton::Proton())     ih = 5;
     else if (particle == G4Deuteron::Deuteron()) ih = 6;
     else if (particle == G4Alpha::Alpha())       ih = 7;       
@@ -192,7 +194,7 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
               
   // kill event after first interaction
   //
-  G4RunManager::GetRunManager()->AbortEvent();  
+  //G4RunManager::GetRunManager()->AbortEvent();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
