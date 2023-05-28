@@ -1,58 +1,26 @@
-#----------------------------------------------------------------------------
-# Setup the project
-cmake_minimum_required(VERSION 3.16...3.21)
-project(Hadr03)
+cmake_minimum_required(VERSION 3.24)
 
-#----------------------------------------------------------------------------
-# Find Geant4 package, activating all available UI and Vis drivers by default
-# You can set WITH_GEANT4_UIVIS to OFF via the command line or ccmake/cmake-gui
-# to build a batch mode only executable
-#
-option(WITH_GEANT4_UIVIS "Build example with Geant4 UI and Vis drivers" ON)
-if(WITH_GEANT4_UIVIS)
-  find_package(Geant4 REQUIRED ui_all vis_all)
-else()
-  find_package(Geant4 REQUIRED)
-endif()
+### Setting up vcpkg
+# The vcpkg section needs to be before 'project command'
+set(VCPKG_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg" CACHE STRING "Path to vcpkg")
+set(CMAKE_TOOLCHAIN_FILE "${VCPKG_LOCATION}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Path to cmake toolchain file from vcpkg.")
+set(VCPKG_TARGET_TRIPLET "x64-linux-release" CACHE STRING "Vcpkg target triplet")
+set(VCPKG_LIBRARY_LINKAGE "static" CACHE STRING "Specifies the preferred library linkage.")
 
-#----------------------------------------------------------------------------
-# Setup Geant4 include directories and compile definitions
-#
-include(${Geant4_USE_FILE})
+project(NA60+ LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
 
-#----------------------------------------------------------------------------
-# Locate sources and headers for this project
-#
-include_directories(${PROJECT_SOURCE_DIR}/include 
-                    ${Geant4_INCLUDE_DIR})
-file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
-file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
+### Setting up the compiler
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
-#----------------------------------------------------------------------------
-# Add the executable, and link it to the Geant4 libraries
-#
-add_executable(Hadr03 Hadr03.cc ${sources} ${headers} include/ElectronPhysics.hh src/ElectronPhysics.cpp include/ParticleInfo.hh src/ParticleInfo.cpp include/ParticleInfo.hh src/ParticleInfo.cpp)
-target_link_libraries(Hadr03 ${Geant4_LIBRARIES} )
+set(Boost_NO_WARN_NEW_VERSIONS ON)
 
-#----------------------------------------------------------------------------
-# Copy all scripts to the build directory, i.e. the directory in which we
-# build Hadr03. This is so that we can run the executable directly because it
-# relies on these scripts being in the current working directory.
-#
-set(Hadr03_SCRIPTS
-    debug.mac envHadronic.csh envHadronic.sh elastic.mac gamma.mac hadr03.in inelastic.mac ion.mac nCapture.mac neutron.mac nFission.mac fusion.mac vis.mac
-  )
+set(PROJECT_GEANT4_USE_GUI ON CACHE BOOL "Build the project with Geant4's GUI support.")
 
-foreach(_script ${Hadr03_SCRIPTS})
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/${_script}
-    ${PROJECT_BINARY_DIR}/${_script}
-    COPYONLY
-    )
-endforeach()
 
-#----------------------------------------------------------------------------
-# Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
-#
-install(TARGETS Hadr03 DESTINATION bin)
+add_subdirectory(common)
 
+add_subdirectory(src)

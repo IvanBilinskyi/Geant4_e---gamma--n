@@ -1,0 +1,8 @@
+# build files
+cmake-build-debug/
+build/
+.idea/
+
+# output files
+*.out
+*.root
