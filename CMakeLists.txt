@@ -18,7 +18,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 set(Boost_NO_WARN_NEW_VERSIONS ON)
 
-set(PROJECT_GEANT4_USE_GUI OFF CACHE BOOL "Build the project with Geant4's GUI support.")
+set(PROJECT_GEANT4_USE_GUI ON CACHE BOOL "Build the project with Geant4's GUI support.")
 
 
 add_subdirectory(common)

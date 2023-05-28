@@ -1,5 +1,3 @@
-#include <TRint.h>
-
 #include <exception>
 
 #include "Geant4Application.h"

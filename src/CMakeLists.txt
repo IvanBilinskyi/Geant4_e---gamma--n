@@ -6,7 +6,7 @@ else()
 endif()
 
 # finding Geant4 script files and updating them in the build directory
-file(GLOB Geant4ScriptFiles RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.mac")
+file(GLOB Geant4ScriptFiles RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/*.mac")
 foreach (f ${Geant4ScriptFiles})
   message(status "From ${f}")
   get_filename_component(outputFileName ${f} NAME)
@@ -46,6 +46,12 @@ set(ACTION_SOURCE_FILES
         actions/RunAction.hh
         actions/SteppingAction.cc
         actions/SteppingAction.hh)
+
+set(ANALYSIS_SOURCE_FILES
+        analysis/HistoManager.cc
+        analysis/HistoManager.hh
+        analysis/ParticleInfo.cpp
+        analysis/ParticleInfo.hh)
 
 # make the executable
 add_executable(simulation

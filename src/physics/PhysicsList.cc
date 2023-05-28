@@ -112,7 +112,7 @@ PhysicsList::PhysicsList()
     //
     RegisterPhysics(new GammaNuclearPhysics("gamma"));
     RegisterPhysics(new G4HadronPhysicsShieldingLEND());
-    ////RegisterPhysics( new GammaNuclearPhysicsLEND("gamma"));
+    //RegisterPhysics( new GammaNuclearPhysicsLEND("gamma"));
 
     // Radioactive decay
     //RegisterPhysics(new G4RadioactiveDecayPhysics());

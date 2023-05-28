@@ -28,18 +28,21 @@
 # trajectories are established:
 /vis/viewer/set/autoRefresh false
 /vis/verbose errors
+# Background color:
+/vis/viewer/set/background white
 #
 # Draw geometry:
 /vis/drawVolume
 #
 # Specify view angle:
-#/vis/viewer/set/viewpointThetaPhi 90. 0.
+/vis/viewer/set/viewpointVector -1 0 0
+/vis/viewer/set/targetPoint 0 0 0 mm
 #
 # Specify zoom value:
 /vis/viewer/zoom 1.4
 #
 # Specify style (surface or wireframe):
-#/vis/viewer/set/style surface
+/vis/viewer/set/style surface
 #
 # Draw coordinate axes:
 #/vis/scene/add/axes 0 0 0 1 m
