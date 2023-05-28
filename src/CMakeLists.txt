@@ -1,58 +1,71 @@
-#----------------------------------------------------------------------------
-# Setup the project
-cmake_minimum_required(VERSION 3.16...3.21)
-project(Hadr03)
-
-#----------------------------------------------------------------------------
-# Find Geant4 package, activating all available UI and Vis drivers by default
-# You can set WITH_GEANT4_UIVIS to OFF via the command line or ccmake/cmake-gui
-# to build a batch mode only executable
-#
-option(WITH_GEANT4_UIVIS "Build example with Geant4 UI and Vis drivers" ON)
-if(WITH_GEANT4_UIVIS)
-  find_package(Geant4 REQUIRED ui_all vis_all)
+### Geant4 Section ###
+if(PROJECT_GEANT4_USE_GUI)
+  find_package(Geant4 11 REQUIRED ui_all vis_all)
 else()
-  find_package(Geant4 REQUIRED)
+  find_package(Geant4 11 REQUIRED)
 endif()
 
-#----------------------------------------------------------------------------
-# Setup Geant4 include directories and compile definitions
-#
-include(${Geant4_USE_FILE})
+# finding Geant4 script files and updating them in the build directory
+file(GLOB Geant4ScriptFiles RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.mac")
+foreach (f ${Geant4ScriptFiles})
+  message(status "From ${f}")
+  get_filename_component(outputFileName ${f} NAME)
+  message(status "To ${CMAKE_CURRENT_BINARY_DIR}/${outputFileName}")
+  configure_file(${f} ${CMAKE_CURRENT_BINARY_DIR}/${outputFileName} COPYONLY)
+endforeach ()
 
-#----------------------------------------------------------------------------
-# Locate sources and headers for this project
-#
-include_directories(${PROJECT_SOURCE_DIR}/include 
-                    ${Geant4_INCLUDE_DIR})
-file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
-file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
+# configure source files
+set(DETECTOR_SOURCE_FILES
+        detector/DetectorConstruction.cc
+        detector/DetectorConstruction.hh
+        detector/DetectorMessenger.cc
+        detector/DetectorMessenger.hh)
 
-#----------------------------------------------------------------------------
-# Add the executable, and link it to the Geant4 libraries
-#
-add_executable(Hadr03 Hadr03.cc ${sources} ${headers} include/ElectronPhysics.hh src/ElectronPhysics.cpp include/ParticleInfo.hh src/ParticleInfo.cpp include/ParticleInfo.hh src/ParticleInfo.cpp)
-target_link_libraries(Hadr03 ${Geant4_LIBRARIES} )
+set(PHYSICS_SOURCE_FILES
+        physics/PhysicsList.cc
+        physics/PhysicsList.hh
+        physics/ElectronPhysics.cpp
+        physics/ElectronPhysics.hh
+        physics/GammaNuclearPhysics.cc
+        physics/GammaNuclearPhysics.hh
+        physics/GammaNuclearPhysicsLEND.cc
+        physics/GammaNuclearPhysicsLEND.hh)
 
-#----------------------------------------------------------------------------
-# Copy all scripts to the build directory, i.e. the directory in which we
-# build Hadr03. This is so that we can run the executable directly because it
-# relies on these scripts being in the current working directory.
-#
-set(Hadr03_SCRIPTS
-    debug.mac envHadronic.csh envHadronic.sh elastic.mac gamma.mac hadr03.in inelastic.mac ion.mac nCapture.mac neutron.mac nFission.mac fusion.mac vis.mac
-  )
+set(RUN_SOURCE_FILES
+        run/Run.cc
+        run/Run.hh
+        run/RunMessenger.cc
+        run/RunMessenger.hh)
 
-foreach(_script ${Hadr03_SCRIPTS})
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/${_script}
-    ${PROJECT_BINARY_DIR}/${_script}
-    COPYONLY
-    )
-endforeach()
+set(ACTION_SOURCE_FILES
+        actions/ActionInitialization.cc
+        actions/ActionInitialization.hh
+        actions/PrimaryGeneratorAction.cc
+        actions/PrimaryGeneratorAction.hh
+        actions/RunAction.cc
+        actions/RunAction.hh
+        actions/SteppingAction.cc
+        actions/SteppingAction.hh)
 
-#----------------------------------------------------------------------------
-# Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
-#
-install(TARGETS Hadr03 DESTINATION bin)
-
+# make the executable
+add_executable(simulation
+        main.cpp
+        Geant4Application.cpp
+        Geant4Application.h
+        ApplicationMessenger.cpp
+        ApplicationMessenger.h
+        ${DETECTOR_SOURCE_FILES}
+        ${PHYSICS_SOURCE_FILES}
+        ${RUN_SOURCE_FILES}
+        ${ACTION_SOURCE_FILES}
+        ${ANALYSIS_SOURCE_FILES})
+target_include_directories(simulation PRIVATE
+        detector
+        physics
+        run
+        actions
+        analysis
+        ${PYTHIA8_INCLUDE_DIRS})
+target_link_libraries(simulation PUBLIC
+        common
+        ${Geant4_LIBRARIES})
