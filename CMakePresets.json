@@ -1,0 +1,33 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default Config",
+      "description": "Default build",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "VCPKG_LOCATION": "${sourceDir}/vcpkg",
+        "VCPKG_TARGET_TRIPLET": "x64-linux",
+        "VCPKG_LIBRARY_LINKAGE": "dynamic",
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "environment": {
+        "PROJECT_DATA_DIR": "${sourceDir}/data",
+        "PROJECT_PLOTS_DIR": "${sourceDir}/images"
+      },
+      "toolchainFile": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    }
+  ]
+}
