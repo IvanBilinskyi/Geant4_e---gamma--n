@@ -1,0 +1,4 @@
+#pragma once
+
+#define PROJECT_DATA_DIR std::string("$ENV{PROJECT_DATA_DIR}")
+

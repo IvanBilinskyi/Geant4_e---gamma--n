@@ -18,8 +18,7 @@
         "CMAKE_BUILD_TYPE": "Release"
       },
       "environment": {
-        "PROJECT_DATA_DIR": "${sourceDir}/data",
-        "PROJECT_PLOTS_DIR": "${sourceDir}/images"
+        "PROJECT_DATA_DIR": "${sourceDir}/data"
       },
       "toolchainFile": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
     }
