@@ -1,8 +1,9 @@
+#include <G4ParticleHPManager.hh>
 #include "Geant4Application.h"
 
-#include "ActionInitialization.h"
-#include "DetectorConstruction.h"
-#include "PhysicsList.h"
+#include "ActionInitialization.hh"
+#include "DetectorConstruction.hh"
+#include "PhysicsList.hh"
 
 Geant4Application::Geant4Application(int argc, char** argv, bool runGUI)
     : runManager(new G4MTRunManager),
@@ -29,9 +30,18 @@ Geant4Application::~Geant4Application()
 void Geant4Application::Init()
 {
     // set mandatory initialization classes
-    runManager->SetUserInitialization(new DetectorConstruction);
+    auto detectorConstruction = new DetectorConstruction;
+    runManager->SetUserInitialization(detectorConstruction);
     runManager->SetUserInitialization(new PhysicsList);
-    runManager->SetUserInitialization(new ActionInitialization);
+    runManager->SetUserInitialization(new ActionInitialization(detectorConstruction));
+
+    G4ParticleHPManager::GetInstance()->SetSkipMissingIsotopes( false );
+    G4ParticleHPManager::GetInstance()->SetDoNotAdjustFinalState( true );
+    G4ParticleHPManager::GetInstance()->SetUseOnlyPhotoEvaporation( true );
+    G4ParticleHPManager::GetInstance()->SetNeglectDoppler( false );
+    G4ParticleHPManager::GetInstance()->SetProduceFissionFragments( false );
+    G4ParticleHPManager::GetInstance()->SetUseWendtFissionModel( false );
+    G4ParticleHPManager::GetInstance()->SetUseNRESP71Model( false );
 }
 
 void Geant4Application::InitGUI()
