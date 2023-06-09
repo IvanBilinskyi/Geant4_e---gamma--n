@@ -1,8 +1,10 @@
 # Change the default number of threads (in multi-threaded mode)
-/run/numberOfThreads 4
+/run/numberOfThreads 8
 
 # Initialize kernel
 /run/initialize
 
-/run/beamOn 100
-exit
+/control/execute ta.mac
+
+#/run/beamOn 100
+#exit

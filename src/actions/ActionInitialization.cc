@@ -31,6 +31,7 @@
 #include "PrimaryGeneratorAction.hh"
 #include "RunAction.hh"
 #include "SteppingAction.hh"
+#include "EventAction.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -61,9 +62,11 @@ void ActionInitialization::Build() const
     
   RunAction* runAction = new RunAction(fDetector, primary );
   SetUserAction(runAction);
-  
-  SteppingAction* steppingAction = new SteppingAction();
-  SetUserAction(steppingAction);
+
+  EventAction* eventAction = new EventAction(runAction);
+  SetUserAction(eventAction);
+
+  SetUserAction(new SteppingAction(eventAction));
 }  
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

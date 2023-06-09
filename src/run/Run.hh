@@ -58,9 +58,13 @@ class Run : public G4Run
     void ParticleCount(G4String, G4double);
     void Balance(G4double);
     void CountGamma(G4int);
+    void AddEdep(G4double el, G4int eN, G4double gamma, G4int gN);
+    void AddNCount(G4int n);
         
     virtual void Merge(const G4Run*);      
-    void EndOfRun(G4bool); 
+    void EndOfRun(G4bool);
+    G4LogicalVolume* GetScoringVolume() {return fScoringVolume;};
+    G4LogicalVolume* GetNeutronOrb() {return fNeutronOrb;};
    
   private:
     struct ParticleData {
@@ -86,6 +90,8 @@ class Run : public G4Run
   private:
     DetectorConstruction* fDetector;
     G4ParticleDefinition* fParticle;
+    G4LogicalVolume* fScoringVolume;
+    G4LogicalVolume* fNeutronOrb;
     G4double              fEkin;
         
     std::map<G4String,G4int> fProcCounter;            
@@ -94,6 +100,11 @@ class Run : public G4Run
     G4int fGammaCount;      //nb of events with gamma
     G4double fSumTrack;     //sum of trackLength
     G4double fSumTrack2;    //sum of trackLength*trackLength
+    G4double fTotElEdep = 0.;
+    G4int fTotECount = 0;
+    G4double fTotGammaEdep = 0.;
+    G4int fTotGCount = 0;
+    G4int fTotNCount = 0;
          
     std::map<G4String,NuclChannel>  fNuclChannelMap;    
     std::map<G4String,ParticleData> fParticleDataMap;

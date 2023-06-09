@@ -14,3 +14,5 @@
 
 #/run/beamOn 1
 /vis/viewer/set/targetPoint 0 0 0 mm
+
+#/control/execute ta.mac

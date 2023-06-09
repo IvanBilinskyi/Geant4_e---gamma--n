@@ -91,4 +91,22 @@
 /vis/filtering/trajectories/particleFilter-0/add e-
 /vis/filtering/trajectories/particleFilter-0/add gamma
 
-/vis/scene/add/axes 0 0 0 10 m
+#/vis/scene/add/axes 0 0 0 10 m
+
+/vis/geometry/set/visibility World 0 false
+
+/control/alias TargetColor "0.5  0.36  0.54  0.5"
+/control/alias alpideColor  "1.0  0.80  0.3  0.5"
+
+/vis/geometry/set/colour plate1 0 {TargetColor}
+/vis/geometry/set/colour plate2 0 {TargetColor}
+/vis/geometry/set/colour plate3 0 {TargetColor}
+/vis/geometry/set/colour plate4 0 {TargetColor}
+/vis/geometry/set/colour plate5 0 {TargetColor}
+/vis/geometry/set/colour plate6 0 {TargetColor}
+/vis/geometry/set/colour plate7 0 {TargetColor}
+/vis/geometry/set/colour plate8 0 {TargetColor}
+/vis/geometry/set/colour plate9 0 {TargetColor}
+/vis/geometry/set/colour plate10 0 {TargetColor}
+/vis/geometry/set/colour scoring 0 {alpideColor}
+/vis/geometry/set/colour quartz 0 {alpideColor}

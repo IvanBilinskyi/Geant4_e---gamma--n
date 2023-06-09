@@ -40,6 +40,7 @@
 class G4LogicalVolume;
 class G4Material;
 class DetectorMessenger;
+class G4Sphere;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -61,10 +62,13 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     void SetMaterial (G4String);            
 
   public:
-  
+     G4VPhysicalVolume* GetWorld()      {return fPBox;};
+     G4VPhysicalVolume* GetPQuartz()     {return fPBox;};
+     G4LogicalVolume* GetLQuartz() const {return fLQuartz;};
+     G4LogicalVolume* GetLScoring() const {return fLScoring;};
+    G4Sphere* GetScoringSphere() const {return fScoringSphere;};
+
      const
-     G4VPhysicalVolume* GetWorld()      {return fPBox;};           
-                    
      G4double           GetSize()       {return fBoxSize;};      
      G4Material*        GetMaterial()   {return fMaterial;};
      
@@ -74,6 +78,12 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   
      G4VPhysicalVolume*    fPBox;
      G4LogicalVolume*      fLBox;
+
+     G4VPhysicalVolume* fPQuartz;
+     G4LogicalVolume* fLQuartz;
+
+     G4Sphere* fScoringSphere;
+     G4LogicalVolume* fLScoring;
      
      G4double              fBoxSize;
      G4Material*           fMaterial;     

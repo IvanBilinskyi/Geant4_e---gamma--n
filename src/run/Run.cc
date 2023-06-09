@@ -39,8 +39,12 @@
 #include "G4HadronicProcessStore.hh"
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4RunManager.hh"
+#include "G4Sphere.hh"
+#include "math.h"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+class G4RunManager;
 
 Run::Run(DetectorConstruction* det)
 : G4Run(),
@@ -53,6 +57,8 @@ Run::Run(DetectorConstruction* det)
   for (G4int i=0; i<3; i++) { fNbGamma[i] = 0 ; }
   fPbalance[1] = DBL_MAX;
   fNbGamma[1]  = 10000;
+  fScoringVolume = fDetector->GetLQuartz();
+  fNeutronOrb = fDetector->GetLScoring();
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -153,6 +159,18 @@ void Run::CountGamma(G4int nGamma)
   if (nGamma > fNbGamma[2]) fNbGamma[2] = nGamma;    
 }
 
+void Run::AddEdep(G4double el, G4int eN, G4double gamma, G4int gN)
+{
+    fTotElEdep += el;
+    fTotECount += eN;
+    fTotGammaEdep += gamma;
+    fTotGCount += gN;
+}
+
+void Run::AddNCount(G4int n) {
+    fTotNCount += n;
+}
+
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void Run::Merge(const G4Run* run)
@@ -240,194 +258,233 @@ void Run::Merge(const G4Run* run)
       if (emax > data.fEmax) data.fEmax = emax; 
     }   
   }
-  
+
+  fTotElEdep += localRun->fTotElEdep;
+  fTotGammaEdep += localRun->fTotGammaEdep;
+  fTotNCount += localRun->fTotNCount;
+  fTotGCount += localRun->fTotGCount;
+  fTotECount += localRun->fTotECount;
+
   G4Run::Merge(run); 
 } 
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Run::EndOfRun(G4bool print) 
+void Run::EndOfRun(G4bool print)
 {
-  G4int prec = 5, wid = prec + 2;  
-  G4int dfprec = G4cout.precision(prec);
-  
-  //run condition
-  //
-  G4Material* material = fDetector->GetMaterial();
-  G4double density = material->GetDensity();
-   
-  G4String Particle = fParticle->GetParticleName();    
-  G4cout << "\n The run is " << numberOfEvent << " "<< Particle << " of "
-         << G4BestUnit(fEkin,"Energy") << " through " 
-         << G4BestUnit(fDetector->GetSize(),"Length") << " of "
-         << material->GetName() << " (density: " 
-         << G4BestUnit(density,"Volumic Mass") << ")" << G4endl;
+    G4int prec = 5, wid = prec + 2;
+    G4int dfprec = G4cout.precision(prec);
 
-  if (numberOfEvent == 0) { G4cout.precision(dfprec);   return;}
-             
-  //frequency of processes
-  //
-  G4cout << "\n Process calls frequency:" << G4endl;  
-  G4int survive = 0;
-  std::map<G4String,G4int>::iterator it;    
-  for (it = fProcCounter.begin(); it != fProcCounter.end(); it++) {
-     G4String procName = it->first;
-     G4int    count    = it->second;
-     G4cout << "\t" << procName << "= " << count;
-     if (procName == "Transportation") survive = count;
-  }
-  G4cout << G4endl;
-      
-  if (survive > 0) {
-    G4cout << "\n Nb of incident particles surviving after "
-           << G4BestUnit(fDetector->GetSize(),"Length") << " of "
-           << material->GetName() << " : " << survive << G4endl;
-  }
-  
-  if (fTotalCount == 0) fTotalCount = 1;   //force printing anyway
-  
-  //compute mean free path and related quantities
-  //
-  G4double MeanFreePath = fSumTrack /fTotalCount;     
-  G4double MeanTrack2   = fSumTrack2/fTotalCount;     
-  G4double rms = std::sqrt(std::fabs(MeanTrack2 - MeanFreePath*MeanFreePath));
-  G4double CrossSection = 0.0;
-  if(MeanFreePath > 0.0) { CrossSection = 1./MeanFreePath; }
-  G4double massicMFP = MeanFreePath*density;
-  G4double massicCS  = 0.0;
-  if(massicMFP > 0.0) { massicCS = 1./massicMFP; }
-   
-  G4cout << "\n\n MeanFreePath:\t"   << G4BestUnit(MeanFreePath,"Length")
-         << " +- "                   << G4BestUnit( rms,"Length")
-         << "\tmassic: "             << G4BestUnit(massicMFP, "Mass/Surface")
-         << "\n CrossSection:\t"     << CrossSection*cm << " cm^-1 "
-         << "\t\tmassic: "           << G4BestUnit(massicCS, "Surface/Mass")
-         << G4endl;
-         
-  //cross section per atom (only for single material)
-  //
-  if (material->GetNumberOfElements() == 1) {
-    G4double nbAtoms = material->GetTotNbOfAtomsPerVolume();
-    G4double crossSection = CrossSection/nbAtoms;
-    G4cout << " crossSection per atom:\t"
-           << G4BestUnit(crossSection,"Surface") << G4endl;     
-  }         
-  //check cross section from G4HadronicProcessStore
-  //
-  G4cout << "\n Verification: "
-         << "crossSections from G4HadronicProcessStore:";
-  
-  G4ProcessTable* processTable  = G4ProcessTable::GetProcessTable();
-  G4HadronicProcessStore* store = G4HadronicProcessStore::Instance();
-  G4double sumc1 = 0.0, sumc2 = 0.0; 
-  if (material->GetNumberOfElements() == 1) {
-    const G4Element* element = material->GetElement(0);
+    //run condition
+    //
+    G4Material* material = fDetector->GetMaterial();
+    G4double density = material->GetDensity();
+
+    G4String Particle = fParticle->GetParticleName();
+    G4cout << "\n The run is " << numberOfEvent << " "<< Particle << " of "
+           << G4BestUnit(fEkin,"Energy")// << " through "
+           //         << G4BestUnit(fDetector->GetSize(),"Length") << " of "
+           //         << material->GetName() << " (density: "
+           //         << G4BestUnit(density,"Volumic Mass") << ")"
+           << G4endl;
+
+    if (numberOfEvent == 0) { G4cout.precision(dfprec);   return;}
+
+    //frequency of processes
+    //
+    G4cout << "\n Process calls frequency:" << G4endl;
+    G4int survive = 0;
+    G4double totCount = 0;
+    std::map<G4String,G4int>::iterator it;
     for (it = fProcCounter.begin(); it != fProcCounter.end(); it++) {
-      G4String procName = it->first;
-      G4VProcess* process = processTable->FindProcess(procName, fParticle);
-      if (process == nullptr)
-          continue;
-      G4double xs1 =
-      store->GetCrossSectionPerVolume(fParticle,fEkin,process,material);
-      G4double massSigma = xs1/density;
-      sumc1 += massSigma;      
-      G4double xs2 =
-      store->GetCrossSectionPerAtom(fParticle,fEkin,process,element,material);
-      sumc2 += xs2;
-      G4cout << "\n" << std::setw(20) << procName << "= "
-             << G4BestUnit(massSigma, "Surface/Mass") << "\t"
-             << G4BestUnit(xs2, "Surface");
-      
-    }             
-    G4cout << "\n" << std::setw(20) << "total" << "= "
-           << G4BestUnit(sumc1, "Surface/Mass") << "\t" 
-           << G4BestUnit(sumc2, "Surface") << G4endl;  
-  } else {
+        if (it->first == "Transportation") continue;
+        totCount += it->second;
+    }
     for (it = fProcCounter.begin(); it != fProcCounter.end(); it++) {
-      G4String procName = it->first;
-      G4VProcess* process = processTable->FindProcess(procName, fParticle);
-      G4double xs =
-      store->GetCrossSectionPerVolume(fParticle,fEkin,process,material);
-      G4double massSigma = xs/density;
-      sumc1 += massSigma;
-      G4cout << "\n" << std::setw(20)  << procName << "= " 
-             << G4BestUnit(massSigma, "Surface/Mass");
-    }             
-    G4cout << "\n" << std::setw(20) << "total" << "= " 
-           << G4BestUnit(sumc1, "Surface/Mass") << G4endl;  
-  }
-              
- //nuclear channel count
- //
- G4cout << "\n List of nuclear reactions: \n" << G4endl; 
- std::map<G4String,NuclChannel>::iterator ic;               
- for (ic = fNuclChannelMap.begin(); ic != fNuclChannelMap.end(); ic++) { 
-    G4String name    = ic->first;
-    NuclChannel data = ic->second;
-    G4int count = data.fCount;
-    G4double Q  = data.fQ/count; 
-    if (print)         
-      G4cout << "  " << std::setw(60) << name << ": " << std::setw(7) << count
-             << "   Q = " << std::setw(wid) << G4BestUnit(Q, "Energy")
-             << G4endl;           
- } 
- 
- //Gamma count
- //
- if (print && (fGammaCount > 0)) {       
-   G4cout << "\n" << std::setw(58) << "number of gamma or e- (ic): N = " 
-           << fNbGamma[1] << " --> " << fNbGamma[2] << G4endl;
- }
- 
- if (print && fTargetXXX) {
-   G4cout 
-   << "\n   --> NOTE: XXXX because neutronHP is unable to return target nucleus"
-   << G4endl;
- }
-            
- //particles count
- //
- G4cout << "\n List of generated particles:" << G4endl;
-     
- std::map<G4String,ParticleData>::iterator itn;               
- for (itn = fParticleDataMap.begin(); itn != fParticleDataMap.end(); itn++) { 
-    G4String name = itn->first;
-    ParticleData data = itn->second;
-    G4int count = data.fCount;
-    G4double eMean = data.fEmean/count;
-    G4double eMin = data.fEmin;
-    G4double eMax = data.fEmax;    
-    if (print)         
-    G4cout << "  " << std::setw(13) << name << ": " << std::setw(7) << count
-           << "  Emean = " << std::setw(wid) << G4BestUnit(eMean, "Energy")
-           << "\t( "  << G4BestUnit(eMin, "Energy")
-           << " --> " << G4BestUnit(eMax, "Energy") 
-           << ")" << G4endl;
- }
- 
- //energy momentum balance
- //
- if (fTotalCount > 1) {
-    G4double Pbmean = fPbalance[0]/fTotalCount;           
-    G4cout << "\n   Momentum balance: Pmean = " 
-           << std::setw(wid) << G4BestUnit(Pbmean, "Energy")
-           << "\t( "  << G4BestUnit(fPbalance[1], "Energy")
-           << " --> " << G4BestUnit(fPbalance[2], "Energy")
-           << ") \n" << G4endl;
- }
-  
-  //normalize histograms      
-  ////G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
-  ////G4double factor = 1./numberOfEvent;
-  ////analysisManager->ScaleH1(3,factor);
-           
-  //remove all contents in fProcCounter, fCount 
-  fProcCounter.clear();
-  fNuclChannelMap.clear();      
-  fParticleDataMap.clear();
-                          
-  //restore default format         
-  G4cout.precision(dfprec);   
+        G4String procName = it->first;
+        G4int    count    = it->second;
+        G4cout << "\t" << procName << "= " << count << ", " << count / totCount;
+        if (procName == "Transportation") survive = count;
+    }
+    G4cout << G4endl;
+
+    if (survive > 0) {
+        G4cout << "\n Nb of incident particles surviving after "
+               << G4BestUnit(fDetector->GetSize(),"Length") << " of "
+               << material->GetName() << " : " << survive << G4endl;
+    }
+
+    if (fTotalCount == 0) fTotalCount = 1;   //force printing anyway
+
+    //compute mean free path and related quantities
+    //
+    G4double MeanFreePath = fSumTrack /fTotalCount;
+    G4double MeanTrack2   = fSumTrack2/fTotalCount;
+    G4double rms = std::sqrt(std::fabs(MeanTrack2 - MeanFreePath*MeanFreePath));
+    G4double CrossSection = 0.0;
+    if(MeanFreePath > 0.0) { CrossSection = 1./MeanFreePath; }
+    G4double massicMFP = MeanFreePath*density;
+    G4double massicCS  = 0.0;
+    if(massicMFP > 0.0) { massicCS = 1./massicMFP; }
+
+    G4cout << "\n\n MeanFreePath:\t"   << G4BestUnit(MeanFreePath,"Length")
+           << " +- "                   << G4BestUnit( rms,"Length")
+           << "\tmassic: "             << G4BestUnit(massicMFP, "Mass/Surface")
+           << "\n CrossSection:\t"     << CrossSection*cm << " cm^-1 "
+           << "\t\tmassic: "           << G4BestUnit(massicCS, "Surface/Mass")
+           << G4endl;
+
+    //cross section per atom (only for single material)
+    //
+    if (material->GetNumberOfElements() == 1) {
+        G4double nbAtoms = material->GetTotNbOfAtomsPerVolume();
+        G4double crossSection = CrossSection/nbAtoms;
+        G4cout << " crossSection per atom:\t"
+               << G4BestUnit(crossSection,"Surface") << G4endl;
+    }
+    //check cross section from G4HadronicProcessStore
+    //
+    G4cout << "\n Verification: "
+           << "crossSections from G4HadronicProcessStore:";
+
+    G4ProcessTable* processTable  = G4ProcessTable::GetProcessTable();
+    G4HadronicProcessStore* store = G4HadronicProcessStore::Instance();
+    G4double sumc1 = 0.0, sumc2 = 0.0;
+    if (material->GetNumberOfElements() == 1) {
+        const G4Element* element = material->GetElement(0);
+        for (it = fProcCounter.begin(); it != fProcCounter.end(); it++) {
+            G4String procName = it->first;
+            G4VProcess* process = processTable->FindProcess(procName, fParticle);
+            if (process == nullptr)
+                continue;
+            G4double xs1 =
+                    store->GetCrossSectionPerVolume(fParticle,fEkin,process,material);
+            G4double massSigma = xs1/density;
+            sumc1 += massSigma;
+            G4double xs2 =
+                    store->GetCrossSectionPerAtom(fParticle,fEkin,process,element,material);
+            sumc2 += xs2;
+            G4cout << "\n" << std::setw(20) << procName << "= "
+                   << G4BestUnit(massSigma, "Surface/Mass") << "\t"
+                   << G4BestUnit(xs2, "Surface");
+
+        }
+        G4cout << "\n" << std::setw(20) << "total" << "= "
+               << G4BestUnit(sumc1, "Surface/Mass") << "\t"
+               << G4BestUnit(sumc2, "Surface") << G4endl;
+    } else {
+        for (it = fProcCounter.begin(); it != fProcCounter.end(); it++) {
+            G4String procName = it->first;
+            G4VProcess* process = processTable->FindProcess(procName, fParticle);
+            G4double xs =
+                    store->GetCrossSectionPerVolume(fParticle,fEkin,process,material);
+            G4double massSigma = xs/density;
+            sumc1 += massSigma;
+            G4cout << "\n" << std::setw(20)  << procName << "= "
+                   << G4BestUnit(massSigma, "Surface/Mass");
+        }
+        G4cout << "\n" << std::setw(20) << "total" << "= "
+               << G4BestUnit(sumc1, "Surface/Mass") << G4endl;
+    }
+
+    //nuclear channel count
+    //
+// G4cout << "\n List of nuclear reactions: \n" << G4endl;
+// std::map<G4String,NuclChannel>::iterator ic;
+// for (ic = fNuclChannelMap.begin(); ic != fNuclChannelMap.end(); ic++) {
+//    G4String name    = ic->first;
+//    NuclChannel data = ic->second;
+//    G4int count = data.fCount;
+//    G4double Q  = data.fQ/count;
+//    if (print)
+//      G4cout << "  " << std::setw(60) << name << ": " << std::setw(7) << count
+//             << "   Q = " << std::setw(wid) << G4BestUnit(Q, "Energy")
+//             << G4endl;
+// }
+//
+    //Gamma count
+    //
+    if (print && (fGammaCount > 0)) {
+        G4cout << "\n" << std::setw(58) << "number of gamma or e- (ic): N = "
+               << fNbGamma[1] << " --> " << fNbGamma[2] << G4endl;
+    }
+
+    if (print && fTargetXXX) {
+        G4cout
+                << "\n   --> NOTE: XXXX because neutronHP is unable to return target nucleus"
+                << G4endl;
+    }
+
+    //particles count
+    //
+    G4cout << "\n List of nonnuclear generated particles:" << G4endl;
+
+    std::map<G4String,ParticleData>::iterator itn;
+    for (itn = fParticleDataMap.begin(); itn != fParticleDataMap.end(); itn++) {
+        G4String name = itn->first;
+        if (name.find("W") != G4String::npos)
+            continue;
+        ParticleData data = itn->second;
+        G4int count = data.fCount;
+        G4double eMean = data.fEmean/count;
+        G4double eMin = data.fEmin;
+        G4double eMax = data.fEmax;
+        if (print)
+            G4cout << "  " << std::setw(13) << name << ": " << std::setw(7) << count
+                   << "  Emean = " << std::setw(wid) << G4BestUnit(eMean, "Energy")
+                   << "\t( "  << G4BestUnit(eMin, "Energy")
+                   << " --> " << G4BestUnit(eMax, "Energy")
+                   << ")" << G4endl;
+    }
+
+    //energy momentum balance
+    //
+    if (fTotalCount > 1) {
+        G4double Pbmean = fPbalance[0]/fTotalCount;
+        G4cout << "\n   Momentum balance: Pmean = "
+               << std::setw(wid) << G4BestUnit(Pbmean, "Energy")
+               << "\t( "  << G4BestUnit(fPbalance[1], "Energy")
+               << " --> " << G4BestUnit(fPbalance[2], "Energy")
+               << ") \n" << G4endl;
+    }
+
+    G4double edep  = fTotGammaEdep + fTotElEdep;
+
+    const auto detConstruction = static_cast<const DetectorConstruction*>(
+            G4RunManager::GetRunManager()->GetUserDetectorConstruction());
+    G4double mass = detConstruction->GetLQuartz()->GetMass();
+    G4double dose = edep/mass;
+
+    G4cout  << " Cumulated dose per run, in scoring volume : "
+            << G4BestUnit(dose,"Dose")
+            << G4endl
+            << " Via gamma : "
+            << G4BestUnit(fTotGammaEdep/mass, "Dose")
+            << " | via e- : "
+            << G4BestUnit(fTotElEdep/mass, "Dose")
+            << G4endl
+            << G4endl;
+
+    G4double surf = detConstruction->GetScoringSphere()->GetSurfaceArea() / 2;
+    G4double fluence = fTotNCount / (surf / cm2);
+
+    G4cout << " Neutron fluence at quartz fiber level : "
+           << fluence << " cm^-2"
+           << G4endl
+           << G4endl;
+
+    //normalize histograms
+    ////G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+    ////G4double factor = 1./numberOfEvent;
+    ////analysisManager->ScaleH1(3,factor);
+
+    //remove all contents in fProcCounter, fCount
+    fProcCounter.clear();
+    fNuclChannelMap.clear();
+    fParticleDataMap.clear();
+
+    //restore default format
+    G4cout.precision(dfprec);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

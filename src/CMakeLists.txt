@@ -44,6 +44,8 @@ set(ACTION_SOURCE_FILES
         actions/PrimaryGeneratorAction.hh
         actions/RunAction.cc
         actions/RunAction.hh
+        actions/EventAction.cc
+        actions/EventAction.hh
         actions/SteppingAction.cc
         actions/SteppingAction.hh)
 
