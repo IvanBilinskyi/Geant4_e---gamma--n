@@ -2,18 +2,19 @@
 # Macro file for "Hadr03.cc"
 #
 /testhadr/det/setIsotopeMat tantalum 73 181 16.69 g/cm3
+/testhadr/det/setSize 50 cm
 #
 /run/initialize
 #
 /gun/particle e-
-/gun/energy 40 MeV
+/gun/energy 80 MeV
 #
 #/run/printProgress 10000
 
 /analysis/h1/set 4 100 0 4000 keV
 /analysis/h1/set 2 100 0 10 MeV
 /analysis/h1/set 3 100 0 10 MeV
-# /run/beamOn 1000
+/run/beamOn 100000
 
 
 

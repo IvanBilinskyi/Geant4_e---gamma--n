@@ -37,6 +37,10 @@
 #include "G4Material.hh"
 #include "G4NistManager.hh"
 #include "G4Box.hh"
+#include "G4Torus.hh"
+#include "G4Orb.hh"
+#include "G4Sphere.hh"
+#include "G4Tubs.hh"
 #include "G4LogicalVolume.hh"
 #include "G4PVPlacement.hh"
 
@@ -143,33 +147,98 @@ G4Material* DetectorConstruction::MaterialWithSingleIsotope( G4String name,
 
 G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
 {
-  // Cleanup old geometry
-  G4GeometryManager::GetInstance()->OpenGeometry();
-  G4PhysicalVolumeStore::GetInstance()->Clean();
-  G4LogicalVolumeStore::GetInstance()->Clean();
-  G4SolidStore::GetInstance()->Clean();
+    // Cleanup old geometry
+    G4GeometryManager::GetInstance()->OpenGeometry();
+    G4PhysicalVolumeStore::GetInstance()->Clean();
+    G4LogicalVolumeStore::GetInstance()->Clean();
+    G4SolidStore::GetInstance()->Clean();
 
-  G4Box*
-  sBox = new G4Box("Container",                         //its name
-                   fBoxSize/2,fBoxSize/2,fBoxSize/2);   //its dimensions
+    G4Box*
+    worldBox = new G4Box("Container",                         //its name
+                     fBoxSize/2,fBoxSize/2,fBoxSize/2);   //its dimensions
 
-  fLBox = new G4LogicalVolume(sBox,                     //its shape
-                             fMaterial,                 //its material
-                             fMaterial->GetName());     //its name
+    G4NistManager* man = G4NistManager::Instance();
+    G4Material* Air  = man->FindOrBuildMaterial("G4_AIR");
 
-  fPBox = new G4PVPlacement(0,                          //no rotation
-                            G4ThreeVector(),            //at (0,0,0)
-                            fLBox,                      //its logical volume
-                            fMaterial->GetName(),       //its name
-                            0,                          //its mother  volume
-                            false,                      //no boolean operation
-                            0);                         //copy number
-                           
-  PrintParameters();
-  
-  //always return the root volume
-  //
-  return fPBox;
+    fLBox = new G4LogicalVolume(worldBox,                     //its shape
+                             Air,                 //its material
+                             "World");  //its name
+    fPBox = new G4PVPlacement(0,
+                              G4ThreeVector(0, 0, 0),
+                              "World",
+                              fLBox,
+                              nullptr,
+                              false,
+                              0);
+
+    G4Material* vacuum = G4NistManager::Instance()->FindOrBuildMaterial( "G4_Galactic" );
+
+    G4String sphName = "scoring";
+    // orb to measure neutron flux
+    fScoringSphere = new G4Sphere(sphName, 5*cm, 5*cm + 1., 0.0, 360*degree, 0.0, 180*degree);
+    fLScoring = new G4LogicalVolume(fScoringSphere, vacuum, sphName);
+    G4VPhysicalVolume* PhSphere = new G4PVPlacement(0,
+                                                 G4ThreeVector(0, 0, 0),
+                                                 fLScoring,
+                                                 sphName,
+                                                 fLBox,
+                                                 false,
+                                                 0);
+
+    G4Material* W = man->FindOrBuildMaterial("G4_W");
+    G4double startPos = -9*mm;
+    for (int i = 0; i < 10; i++)
+    {
+        G4String name = &"plate" [ i];
+        G4Box* plate = new G4Box(name,
+                                 0.5*mm, 8*mm, 8*mm);
+        G4LogicalVolume* LPlate = new G4LogicalVolume(plate,
+                                                      W,
+                                                      name);
+        G4VPhysicalVolume* PhPlate = new G4PVPlacement(0,
+                                                       G4ThreeVector(startPos + 2*i*mm, 0, 0),
+                                                       LPlate,
+                                                       name,
+                                                       fLBox,
+                                                       false,
+                                                       0);
+    }
+
+    G4double z, a, density;
+    G4String name, symbol;
+    G4int ncomponents, natoms;
+
+    a = 28.085*g/mole;
+    G4Element* elSi  = new G4Element(name="Silicon",symbol="Si" , z= 14., a);
+
+    a = 16.00*g/mole;
+    G4Element* elO  = new G4Element(name="Oxygen"  ,symbol="O" , z= 8., a);
+
+    density = 2.600*g/cm3;
+    // quartz fiber
+    G4Material* quartz = new G4Material(name="Water",density,ncomponents=2);
+    quartz->AddElement(elSi, natoms=1);
+    quartz->AddElement(elO, natoms=2);
+
+    G4String torName = "quartz";
+    G4Tubs* quartzSam = new G4Tubs(torName, 0, 5*mm, 5*mm, 0, 360*degree);
+    G4LogicalVolume* LTor = new G4LogicalVolume(quartzSam, quartz, torName);
+    G4VPhysicalVolume* PhTor = new G4PVPlacement(0,
+                                                 G4ThreeVector(0, 0, 4*cm),
+                                                 LTor,
+                                                 torName,
+                                                 fLBox,
+                                                 false,
+                                                 0);
+
+    fLQuartz = LTor;
+    fPQuartz = PhTor;
+
+    PrintParameters();
+
+    //always return the root volume
+    //
+    return fPBox;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

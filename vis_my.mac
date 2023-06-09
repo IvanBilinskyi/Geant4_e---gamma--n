@@ -39,10 +39,12 @@
 /vis/viewer/zoom 1.4
 #
 # Specify style (surface or wireframe):
-#/vis/viewer/set/style surface
+/vis/viewer/set/style wireframe
+/vis/viewer/set/auxiliaryEdge true
+/vis/viewer/set/lineSegmentsPerCircle 100
 #
 # Draw coordinate axes:
-#/vis/scene/add/axes 0 0 0 1 m
+#/vis/scene/add/axes 0 0 0 1 cm
 #
 # Draw smooth trajectories at end of event, showing trajectory points
 # as markers 2 pixels wide:
@@ -80,12 +82,18 @@
 
 /vis/modeling/trajectories/create/drawByParticleID
 /vis/modeling/trajectories/drawByParticleID-0/set e- white
-/vis/modeling/trajectories/drawByParticleID-0/set gamma blue
-/vis/modeling/trajectories/drawByParticleID-0/set neutron green
+#/vis/modeling/trajectories/drawByParticleID-0/set gamma blue
+#/vis/modeling/trajectories/drawByParticleID-0/set neutron green
 
 /vis/filtering/trajectories/create/particleFilter
 /vis/filtering/trajectories/particleFilter-0/add neutron
-/vis/filtering/trajectories/particleFilter-0/add e-
-/vis/filtering/trajectories/particleFilter-0/add gamma
+#/vis/filtering/trajectories/particleFilter-0/add e-
+#/vis/filtering/trajectories/particleFilter-0/add gamma
 
-/vis/scene/add/axes 0 0 0 10 m
+
+
+/vis/geometry/set/visibility World 0 false
+/vis/geometry/set/visibility scoring 0 false
+/vis/viewer/set/style surface
+
+/vis/scene/add/axes 0 0 0 10 cm

@@ -35,6 +35,7 @@
 
 #include "G4UserRunAction.hh"
 #include "G4VProcess.hh"
+#include "G4Accumulable.hh"
 #include "globals.hh"
 #include <map>
 
@@ -57,18 +58,28 @@ class RunAction : public G4UserRunAction
 
   public:
     virtual G4Run* GenerateRun();   
-    virtual void BeginOfRunAction(const G4Run*);
-    virtual void   EndOfRunAction(const G4Run*);
+    void BeginOfRunAction(const G4Run*);
+    void   EndOfRunAction(const G4Run*);
     
     void SetPrintFlag(G4bool);
-                                
+
+    void AddEdep(G4double Edep, G4int eCount, G4double Gdep, G4int gCount) ;
+    void AddNCount(G4int n) ;
+
   private:
     DetectorConstruction*      fDetector;
     PrimaryGeneratorAction*    fPrimary;
     Run*                       fRun;        
     HistoManager*              fHistoManager;
     RunMessenger*              fRunMessenger;
-     
+
+    G4LogicalVolume*           fScoringVolume;
+    G4Accumulable<G4double>    fGammaEnDep = 0.;
+    G4Accumulable<G4double>    fElEnDep = 0.;
+    G4Accumulable<G4int>       fNCount = 0;
+    G4Accumulable<G4int>       fECount = 0;
+    G4Accumulable<G4int>       fGCount = 0;
+
     G4bool   fPrint;      //optional printing           
 };
 
